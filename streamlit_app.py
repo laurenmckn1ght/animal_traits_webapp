@@ -297,9 +297,10 @@ st.markdown("""
 st.header("D) Explore Relationships Between Variables")
 
 st.write("""
-Now that you’ve explored single variables and compared groups, it’s time to look for **relationships between two variables**.
+Now let's explore how different biological traits are related across animals.
+This plot uses **logarithmic scales** on both axes, so we can compare tiny insects and massive mammals together.
 
-In this section, you’ll examine how **brain size** and **body mass** relate across animal classes — and how different scaling choices can change what you see.
+Look for patterns — do bigger animals have proportionally bigger brains or higher metabolic rates?
 """)
 
 # --- Prepare data ---
@@ -315,62 +316,91 @@ plot_data["Class (common name)"] = plot_data["class"].map({
     "Gastropoda": "Snails & Slugs",
     "Reptilia": "Reptiles"
 })
-plot_data = plot_data.dropna(subset=["body mass (kg)", "brain size (kg)", "Class (common name)"])
-plot_data = plot_data[(plot_data["body mass (kg)"] > 0) & (plot_data["brain size (kg)"] > 0)]
-
-classes = plot_data["Class (common name)"].unique()
-colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))
+plot_data = plot_data.dropna(subset=[
+    "body mass (kg)",
+    "metabolic rate (W)",
+    "mass-specific metabolic rate (W/kg)",
+    "brain size (kg)"
+])
 
 # --- User controls ---
-scale_option = st.radio(
-    "Choose axis scale:",
-    ["Linear", "Log X", "Log Y", "Log-Log"],
-    horizontal=True,
-    key="scale_relationship"
-)
+variables = [
+    "body mass (kg)",
+    "metabolic rate (W)",
+    "mass-specific metabolic rate (W/kg)",
+    "brain size (kg)"
+]
 
-show_fit = st.checkbox("Show a line of best fit for each class", value=True)
+c1, c2, c3 = st.columns([1, 1, 1])
+with c1:
+    x_var = st.selectbox("X-axis variable:", options=variables, index=0)
+with c2:
+    y_var = st.selectbox("Y-axis variable:", options=[v for v in variables if v != x_var], index=3)
+with c3:
+    highlight_class = st.selectbox(
+        "Highlight one class (optional):",
+        options=["All"] + sorted(plot_data["Class (common name)"].dropna().unique().tolist())
+    )
+
+show_fit = st.checkbox("Show line of best fit", value=True)
+
+# --- Clean and subset data ---
+subset = plot_data[(plot_data[x_var] > 0) & (plot_data[y_var] > 0)]
+
+classes = subset["Class (common name)"].unique()
+colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))
 
 # --- Plot ---
 fig, ax = plt.subplots(figsize=(7, 5))
 
-for cls, color in zip(classes, colours):
-    subset = plot_data[plot_data["Class (common name)"] == cls]
+# All species
+ax.scatter(
+    subset[x_var],
+    subset[y_var],
+    color="lightgrey",
+    s=25,
+    alpha=0.6,
+    edgecolor="none",
+    label="All species"
+)
+
+# Highlight one group if selected
+if highlight_class != "All":
+    highlight_data = subset[subset["Class (common name)"] == highlight_class]
     ax.scatter(
-        subset["body mass (kg)"],
-        subset["brain size (kg)"],
-        label=cls,
-        alpha=0.7,
-        s=25,
-        color=color,
+        highlight_data[x_var],
+        highlight_data[y_var],
+        s=40,
+        color="tab:red",
         edgecolor="black",
-        linewidth=0.2
+        linewidth=0.3,
+        alpha=0.9,
+        label=highlight_class
     )
-    if show_fit and len(subset) > 2:
-        # Fit line (on log scale if log-log)
-        x = subset["body mass (kg)"]
-        y = subset["brain size (kg)"]
-        if "Log" in scale_option:
-            x = np.log10(x)
-            y = np.log10(y)
+
+    if show_fit and len(highlight_data) > 2:
+        # Fit log–log regression
+        x = np.log10(highlight_data[x_var])
+        y = np.log10(highlight_data[y_var])
         m, b = np.polyfit(x, y, 1)
         x_line = np.linspace(x.min(), x.max(), 100)
         y_line = m * x_line + b
-        if "Log" in scale_option:
-            x_line = 10**x_line
-            y_line = 10**y_line
-        ax.plot(x_line, y_line, color=color, linewidth=1.5, alpha=0.9)
+        ax.plot(10**x_line, 10**y_line, color="tab:red", linewidth=2.0, label=f"{highlight_class} best fit")
+        
+        st.markdown(f"""
+        🔹 **Line of best fit (log–log space):**  
+        `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
+        **Equivalent power-law:**  
+        {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
+        _(Slope = {m:.3f})_
+        """, unsafe_allow_html=True)
 
-# --- Axis scaling ---
-if scale_option in ["Log X", "Log-Log"]:
-    ax.set_xscale("log")
-if scale_option in ["Log Y", "Log-Log"]:
-    ax.set_yscale("log")
-
-# --- Formatting ---
-ax.set_xlabel("Body Mass (kg)")
-ax.set_ylabel("Brain Size (kg)")
-ax.set_title("Brain Size vs Body Mass by Animal Class")
+# --- Axes and style ---
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel(x_var)
+ax.set_ylabel(y_var)
+ax.set_title(f"{y_var} vs {x_var} (Log–Log Scale)")
 ax.legend(fontsize=8, frameon=True)
 ax.grid(True, which="major", linestyle="--", alpha=0.3)
 ax.grid(True, which="minor", linestyle=":", alpha=0.1)
@@ -378,15 +408,18 @@ fig.tight_layout()
 
 st.pyplot(fig, use_container_width=True)
 
-# --- Reflection prompt ---
+# --- Reflection ---
 st.markdown("""
 💬 **Reflection:**  
-Each point represents an animal. Lines show how **brain size changes with body mass** within each class.  
-When both axes are on a *logarithmic scale*, a straight line means a **power-law relationship** (e.g., “brain size grows in proportion to body mass”).  
+When plotted on a log–log scale, straight lines show *scaling laws* — one quantity changing in proportion to another.  
+The **slope** tells us *how fast* one grows compared to the other.  
 
-✏️ **Questions to think about (and answer in the sidebar):**  
-- Which animal groups have the steepest (or flattest) slopes?  
-- What might that mean about how brains scale with body size?  
-- How do log scales make the relationship easier to interpret?
+For example:
+- A slope of **1.0** means perfect proportional growth.  
+- A slope **less than 1** means the y-variable increases more slowly.  
+- A slope **greater than 1** means it increases faster.  
+
+✏️ What does the slope you found suggest about how these traits scale across species?
 """)
+
 

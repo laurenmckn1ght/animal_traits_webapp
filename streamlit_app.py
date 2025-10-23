@@ -55,7 +55,8 @@ questions = {
     "q2": "Q2- Search for your favourite animal. Write down its species name and the 'class' it is in. ",
     "q3": "Q3- What is the biggest animal in the dataset? What is the smallest?",
     "q4": "Q4- Compare the linear and log scales. Which one helped you understand the distribution of body masses better? Why? (What does that tell you about how animal body sizes are spread across the dataset?)",
-    "q5": "Q5- Which type of graph helped you compare the animal classes most clearly?"
+    "q5": "Q5- Which type of graph helped you compare the animal classes most clearly?",
+    "q6": "Q6- Which two variables did you find the most interesting to visualise? Describe the pattern and how it differes for the species group you chose.
 }
 
 responses = {}
@@ -349,72 +350,79 @@ with c3:
 show_fit = st.checkbox("Show line of best fit", value=True)
 
 # --- Clean and subset data ---
-subset = plot_data[(plot_data[x_var] > 0) & (plot_data[y_var] > 0)]
+subset = plot_data[[x_var, y_var, "Class (common name)"]].dropna()
+subset = subset[(subset[x_var] > 0) & (subset[y_var] > 0)]
 
-classes = subset["Class (common name)"].unique()
-colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))
+if subset.empty:
+    st.warning("No valid data available for these variables — they must contain positive values for log–log plotting.")
+else:
+    classes = subset["Class (common name)"].unique()
+    colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))
 
-# --- Plot ---
-fig, ax = plt.subplots(figsize=(7, 5))
+    # --- Plot ---
+    fig, ax = plt.subplots(figsize=(7, 5))
 
-# All species
-ax.scatter(
-    subset[x_var],
-    subset[y_var],
-    color="lightgrey",
-    s=25,
-    alpha=0.6,
-    edgecolor="none",
-    label="All species"
-)
-
-# Highlight one group if selected
-if highlight_class != "All":
-    highlight_data = subset[subset["Class (common name)"] == highlight_class]
+    # All species
     ax.scatter(
-        highlight_data[x_var],
-        highlight_data[y_var],
-        s=40,
-        color="tab:red",
-        edgecolor="black",
-        linewidth=0.3,
-        alpha=0.9,
-        label=highlight_class
+        subset[x_var],
+        subset[y_var],
+        color="lightgrey",
+        s=25,
+        alpha=0.6,
+        edgecolor="none",
+        label="All species"
     )
 
-    if show_fit and len(highlight_data) > 2:
-        # Fit log–log regression
-        x = np.log10(highlight_data[x_var])
-        y = np.log10(highlight_data[y_var])
-        m, b = np.polyfit(x, y, 1)
-        x_line = np.linspace(x.min(), x.max(), 100)
-        y_line = m * x_line + b
-        ax.plot(10**x_line, 10**y_line, color="tab:red", linewidth=2.0, label=f"{highlight_class} best fit")
-        
-        st.markdown(f"""
-        🔹 **Line of best fit (log–log space):**  
-        `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
-        **Equivalent power-law:**  
-        {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
-        _(Slope = {m:.3f})_
-        """, unsafe_allow_html=True)
+    # Highlight one group if selected
+    if highlight_class != "All":
+        highlight_data = subset[subset["Class (common name)"] == highlight_class]
+        ax.scatter(
+            highlight_data[x_var],
+            highlight_data[y_var],
+            s=40,
+            color="tab:red",
+            edgecolor="black",
+            linewidth=0.3,
+            alpha=0.9,
+            label=highlight_class
+        )
 
-# --- Axes and style ---
-ax.set_xscale("log")
-ax.set_yscale("log")
-ax.set_xlabel(x_var)
-ax.set_ylabel(y_var)
-ax.set_title(f"{y_var} vs {x_var} (Log–Log Scale)")
-ax.legend(fontsize=8, frameon=True)
-ax.grid(True, which="major", linestyle="--", alpha=0.3)
-ax.grid(True, which="minor", linestyle=":", alpha=0.1)
-fig.tight_layout()
+        if show_fit and len(highlight_data) > 2:
+            # Fit log–log regression
+            x = np.log10(highlight_data[x_var])
+            y = np.log10(highlight_data[y_var])
+            m, b = np.polyfit(x, y, 1)
+            x_line = np.linspace(x.min(), x.max(), 100)
+            y_line = m * x_line + b
+            ax.plot(10**x_line, 10**y_line, color="tab:red", linewidth=2.0, label=f"{highlight_class} best fit")
 
-st.pyplot(fig, use_container_width=True)
+            st.markdown(f"""
+            🔹 **Line of best fit (log–log space):**  
+            `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
+            **Equivalent power-law:**  
+            {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
+            _(Slope = {m:.3f})_
+            """, unsafe_allow_html=True)
+
+    # --- Axes and style ---
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel(x_var)
+    ax.set_ylabel(y_var)
+    ax.set_title(f"{y_var} vs {x_var} (Log–Log Scale)")
+    ax.legend(fontsize=8, frameon=True)
+    ax.grid(True, which="major", linestyle="--", alpha=0.3)
+    ax.grid(True, which="minor", linestyle=":", alpha=0.1)
+    fig.tight_layout()
+
+    st.pyplot(fig, use_container_width=True)
 
 # --- Reflection ---
 st.markdown("""
-💬 **Reflection:**  
+🚦 Play with different visualisations until you find one that is interesting to you. Then answer question 6 in the sidebar. If you finish early, have a think about the questions below
+
+
+💬 **Advanced:**  
 When plotted on a log–log scale, straight lines show *scaling laws* — one quantity changing in proportion to another.  
 The **slope** tells us *how fast* one grows compared to the other.  
 
@@ -423,7 +431,7 @@ For example:
 - A slope **less than 1** means the y-variable increases more slowly.  
 - A slope **greater than 1** means it increases faster.  
 
-✏️ What does the slope you found suggest about how these traits scale across species?
+✏️ What does the slope you found suggest about how these traits scale across species? Is it the same for different classes of animal?
 """)
 
 

@@ -89,22 +89,17 @@ A **histogram** is a type of graph that shows how frequently different values oc
 # --- Histogram Section ---
 st.subheader("Plot a Histogram")
 
-# Dropdown for variable selection
 variable_option = st.selectbox(
     "Choose a variable to plot:",
     options=["body mass (kg)", "brain size (kg)"],
     index=0
 )
-
-# Input for number of bins
 buckets_option = st.number_input(
-    "Enter the number of buckets (bins) to divide your data into:",
+    "Enter the number of buckets (bins):",
     min_value=5,
     max_value=100,
-    value=20
+    value=25
 )
-
-# Radio button for scale selection
 scale_option = st.radio(
     "Choose the scale for the x-axis:",
     options=["Linear", "Logarithmic"],
@@ -112,38 +107,67 @@ scale_option = st.radio(
     key="scale_histogram"
 )
 
+# Optional: choose group to highlight
+highlight_group = st.selectbox(
+    "Highlight an animal class:",
+    options=["All"] + sorted(data["class"].dropna().unique().tolist())
+)
 
-# Labels for plotting
+# Labels for readability
 labels_list = {
-    'body mass (kg)': 'Body Mass (kilograms)',
-    'brain size (kg)': 'Brain Size (kilograms)'
+    "body mass (kg)": "Body Mass (kilograms)",
+    "brain size (kg)": "Brain Size (kilograms)"
 }
-label = labels_list[variable_option]
+label = labels_list.get(variable_option, variable_option)
 
-# --- Clean and prepare data ---
-plot_data = data[variable_option].dropna()
-# remove impossible or tiny values
-plot_data = plot_data[plot_data > 0.00000001]
+# Prepare data
+data_all = data[variable_option].dropna()
+data_all = data_all[data_all > 0]  # remove nonpositive
+highlight_df = data[data["class"] == highlight_group][variable_option].dropna() if highlight_group != "All" else pd.Series([], dtype=float)
 
-if scale_option == "Logarithmic":
-    # only include positive, non-zero values
-    plot_data = plot_data[plot_data > 0]
-    log_bins = np.logspace(np.log10(plot_data.min()), np.log10(plot_data.max()), buckets_option)
-    bins = log_bins
+# Compute bins
+if scale_option == "Linear":
+    bins = np.linspace(data_all.min(), data_all.max(), int(buckets_option) + 1)
 else:
-    bins = buckets_option
+    lower = max(data_all.min() * 0.8, 1e-9)
+    upper = data_all.max() * 1.2
+    bins = np.logspace(np.log10(lower), np.log10(upper), int(buckets_option) + 1)
 
-# Create histogram
-fig, ax = plt.subplots(figsize=(6, 4))  # width, height in inches
-ax.hist(plot_data, bins=int(buckets_option), color="#1f77b4", edgecolor="black")
-ax.set_xlabel(label)
-ax.set_ylabel("Frequency")
-ax.set_title(f"Distribution of {label} ({scale_option} scale)", fontsize=12)
-ax.tick_params(axis="both", labelsize=10)
+# --- Plot ---
+fig, ax = plt.subplots(figsize=(6, 4))
 
-# Apply log scaling if chosen
+# All species
+ax.hist(
+    data_all,
+    bins=bins,
+    color="lightgrey",
+    alpha=0.8,
+    histtype="stepfilled",
+    label="All species"
+)
+
+# Highlighted group overlay
+if len(highlight_df) > 0:
+    ax.hist(
+        highlight_df,
+        bins=bins,
+        color="tab:red",
+        alpha=0.7,
+        histtype="stepfilled",
+        label=f"{highlight_group}"
+    )
+
+# Log axis if selected
 if scale_option == "Logarithmic":
     ax.set_xscale("log")
+
+# Labels and legend
+ax.set_xlabel(label)
+ax.set_ylabel("Number of Animals")
+ax.set_title(f"{scale_option} Distribution of {label}")
+ax.legend()
+ax.tick_params(axis="both", labelsize=9)
+fig.tight_layout()
 
 st.pyplot(fig, use_container_width=False)
 
@@ -166,7 +190,7 @@ Each *class* represents a broad group, such as mammals, birds, or reptiles.
 Different types of graphs help us see how each group’s data are distributed and whether some groups tend to be heavier or lighter than others.
 """)
 
-# --- Map scientific to common names ---
+# --- Map scientific names to common names ---
 class_labels = {
     "Amphibia": "Amphibians",
     "Arachnida": "Spiders & Scorpions",
@@ -176,90 +200,75 @@ class_labels = {
     "Mammalia": "Mammals",
     "Clitellata": "Worms",
     "Gastropoda": "Snails & Slugs",
-    "Reptilia": "Reptiles",
-    "Chilopoda": "Centipedes"
+    "Reptilia": "Reptiles"
 }
 
-data["Class (common name)"] = data["class"].map(class_labels).fillna(data["class"])
+# Add readable labels and remove Chilopoda
+data["Class (common name)"] = data["class"].map(class_labels)
+plot_data = data.dropna(subset=["body mass (kg)", "Class (common name)"])
+plot_data = plot_data[plot_data["body mass (kg)"] > 0]
 
-# --- Controls ---
+# --- Graph selection ---
 graph_type = st.selectbox(
     "Choose a graph type to compare the classes:",
-    ["Box and Whisker", "Violin", "Swarm (Jitter)", "Overlapping Histograms"]
+    ["Box and Whisker", "Violin", "Swarm (Jitter)"]
 )
+
 scale_option = st.radio(
-    "Choose the scale for the x-axis:",
+    "Choose the scale for the y-axis:",
     options=["Linear", "Logarithmic"],
     horizontal=True,
     key="scale_class_compare"
 )
 
-plot_data = data.dropna(subset=["body mass (kg)", "Class (common name)"])
-plot_data = plot_data[plot_data["body mass (kg)"] > 0]
-
-# --- Plot with Plotly Express ---
+# --- Plotly Express visualisation ---
 fig = None
 if graph_type == "Box and Whisker":
     fig = px.box(
         plot_data,
-        x="body mass (kg)",
-        y="Class (common name)",
-        points="outliers",
+        x="Class (common name)",
+        y="body mass (kg)",
         color="Class (common name)",
-        orientation="h",
+        points="outliers",
     )
+    fig.update_layout(title="Body Mass by Animal Class (Box & Whisker)")
+
 elif graph_type == "Violin":
     fig = px.violin(
         plot_data,
-        x="body mass (kg)",
-        y="Class (common name)",
+        x="Class (common name)",
+        y="body mass (kg)",
         color="Class (common name)",
-        orientation="h",
         box=True,
         points=False,
     )
-elif graph_type == "Swarm (Jitter)":
-    # simulate jittered scatter using random offset
-    jitter = np.random.uniform(-0.3, 0.3, len(plot_data))
-    plot_data["y_jitter"] = plot_data["Class (common name)"] + jitter.astype(str)
+    fig.update_layout(title="Body Mass by Animal Class (Violin Plot)")
+
+else:  # Swarm (Jitter)
     fig = px.strip(
         plot_data,
-        x="body mass (kg)",
-        y="Class (common name)",
+        x="Class (common name)",
+        y="body mass (kg)",
         color="Class (common name)",
-        orientation="h",
+        jitter=True,
+        opacity=0.6,
     )
-else:  # Overlapping Histograms
-    fig = go.Figure()
-    classes = sorted(plot_data["Class (common name)"].unique())
-    colors = px.colors.qualitative.Safe
-    for i, cls in enumerate(classes):
-        subset = plot_data[plot_data["Class (common name)"] == cls]["body mass (kg)"]
-        if scale_option == "Logarithmic":
-            bins = np.logspace(np.log10(subset.min()), np.log10(subset.max()), 30)
-        else:
-            bins = 30
-        fig.add_trace(go.Histogram(
-            x=subset,
-            name=cls,
-            opacity=0.5,
-            nbinsx=30,
-            marker_color=colors[i % len(colors)]
-        ))
-    fig.update_layout(
-        barmode="overlay",
-        xaxis_title="Body Mass (kg)",
-        yaxis_title="Number of Animals",
-        height=450,
-        legend_title="Class",
-        margin=dict(l=20, r=20, t=40, b=20),
-    )
+    fig.update_layout(title="Body Mass by Animal Class (Swarm Plot)")
 
-# --- Apply log scale ---
+# --- Apply scale ---
 if scale_option == "Logarithmic":
-    fig.update_xaxes(type="log")
+    fig.update_yaxes(type="log")
+
+fig.update_layout(
+    height=450,
+    xaxis_title="Animal Class",
+    yaxis_title="Body Mass (kg)",
+    legend_title="Class",
+    margin=dict(l=20, r=20, t=40, b=20),
+)
 
 st.plotly_chart(fig, use_container_width=True)
+
 
 
 # --- Reflection question ---

@@ -9,10 +9,16 @@ import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 import streamlit as st
 
-st.set_page_config(page_title="Yr8 Animal Traits – Black Box", layout="wide")
+st.set_page_config(page_title="CURIOUS Animal Traits", layout="wide")
 
-st.title("Yr8 Animal Traits – Black Box")
-st.write("A student-friendly app to explore a real dataset of animal traits, look for patterns, fit a simple model, and record observations. No code is shown.")
+st.title("CURIOUS Animal Traits")
+st.write("""Authors: James Cleaver, Lauren McKnight, Maria Pettyjohn
+
+In this activity you will use data science to identify patterns and relationships in data, and draw conclusions.
+
+You will be exploring a database of terrestrial (land-dwelling) animals curated from thousands of scientific papers.
+You can read more about the data set at animaltraits.org
+Let's get started!")"""
 
 # --- Data loading ---
 DEFAULT_CSV = "observations.csv"

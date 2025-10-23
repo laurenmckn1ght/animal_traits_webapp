@@ -335,7 +335,11 @@ c1, c2, c3 = st.columns([1, 1, 1])
 with c1:
     x_var = st.selectbox("X-axis variable:", options=variables, index=0)
 with c2:
-    y_var = st.selectbox("Y-axis variable:", options=[v for v in variables if v != x_var], index=3)
+    y_var = st.selectbox(
+        "Y-axis variable:",
+        options=[v for v in variables if v != x_var],
+        index=1  # ✅ was 3, now safe
+    )
 with c3:
     highlight_class = st.selectbox(
         "Highlight one class (optional):",

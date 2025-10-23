@@ -95,7 +95,7 @@ variable_option = st.selectbox(
     index=0
 )
 buckets_option = st.number_input(
-    "Enter the number of buckets (bins):",
+    "Enter the number (between 5 and 100) of buckets (bins) for the histogram:",
     min_value=5,
     max_value=100,
     value=25
@@ -162,10 +162,10 @@ st.write("""
 Now let’s compare how **body mass** differs between different groups of animals.
 
 Each *class* represents a broad group, such as mammals, birds, or reptiles.
-Different graphs can show how the data are spread (the *distribution*) for each group.
+Different graphs help us see how each group’s data are distributed and whether some groups tend to be heavier or lighter.
 """)
 
-# Map class names to readable labels (omit Chilopoda)
+# Map scientific to common names
 class_labels = {
     "Amphibia": "Amphibians",
     "Arachnida": "Spiders & Scorpions",
@@ -177,52 +177,119 @@ class_labels = {
     "Gastropoda": "Snails & Slugs",
     "Reptilia": "Reptiles"
 }
+
+# Prepare data
 plot_data = data.copy()
 plot_data["Class (common name)"] = plot_data["class"].map(class_labels)
 plot_data = plot_data.dropna(subset=["body mass (kg)", "Class (common name)"])
 plot_data = plot_data[plot_data["body mass (kg)"] > 0]
 
+classes = plot_data["Class (common name)"].unique()
+positions = np.arange(len(classes))
+colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))  # distinct palette
+
 graph_type = st.selectbox(
-    "Choose a graph type to compare the classes:",
-    ["Box and Whisker", "Strip (Jitter)"]
+    "Choose a graph type:",
+    ["Box and Whisker", "Violin", "Average ± Error Bars", "Strip (Jitter)"]
 )
 scale_option = st.radio(
-    "Choose the scale for the y-axis:",
-    options=["Linear", "Logarithmic"],
+    "Choose y-axis scale:",
+    ["Linear", "Logarithmic"],
     horizontal=True,
     key="scale_class_compare"
 )
 
-fig, ax = plt.subplots(figsize=(7, 5))
-classes = plot_data["Class (common name)"].unique()
-positions = np.arange(len(classes))
+fig, ax = plt.subplots(figsize=(8, 5))
 
-# --- Box plot ---
+# --- Box and Whisker ---
 if graph_type == "Box and Whisker":
-    box_data = [plot_data.loc[plot_data["Class (common name)"] == cls, "body mass (kg)"] for cls in classes]
-    ax.boxplot(box_data, positions=positions, patch_artist=True,
-               boxprops=dict(facecolor="lightblue", color="black"),
-               medianprops=dict(color="black"),
-               whiskerprops=dict(color="black"),
-               capprops=dict(color="black"))
-# --- Strip (jitter) ---
+    box_data = [
+        plot_data.loc[plot_data["Class (common name)"] == cls, "body mass (kg)"]
+        for cls in classes
+    ]
+    boxprops = dict(linewidth=1.0, color="black")
+    flierprops = dict(marker="x", markersize=3, color="black", alpha=0.6)
+    ax.boxplot(
+        box_data,
+        positions=positions,
+        patch_artist=True,
+        boxprops=boxprops,
+        medianprops=dict(color="black"),
+        whiskerprops=dict(color="black"),
+        capprops=dict(color="black"),
+        flierprops=flierprops,
+    )
+    for patch, color in zip(ax.artists, colours):
+        patch.set_facecolor(color)
+    ax.set_title("Body Mass by Animal Class (Box and Whisker)")
+
+# --- Violin ---
+elif graph_type == "Violin":
+    violin_data = [
+        plot_data.loc[plot_data["Class (common name)"] == cls, "body mass (kg)"]
+        for cls in classes
+    ]
+    parts = ax.violinplot(
+        violin_data,
+        positions=positions,
+        showmedians=True,
+        widths=0.8
+    )
+    for pc, c in zip(parts['bodies'], colours):
+        pc.set_facecolor(c)
+        pc.set_edgecolor("black")
+        pc.set_alpha(0.8)
+    parts["cmedians"].set_color("black")
+    ax.set_title("Body Mass by Animal Class (Violin Plot)")
+
+# --- Average ± Error Bars ---
+elif graph_type == "Average ± Error Bars":
+    means = [plot_data.loc[plot_data["Class (common name)"] == cls, "body mass (kg)"].mean() for cls in classes]
+    stds = [plot_data.loc[plot_data["Class (common name)"] == cls, "body mass (kg)"].std() for cls in classes]
+    ax.errorbar(
+        positions,
+        means,
+        yerr=stds,
+        fmt='o',
+        ecolor='black',
+        elinewidth=1,
+        capsize=4,
+        markersize=6,
+        markerfacecolor='white',
+        markeredgecolor='black',
+        color='black'
+    )
+    for i, (m, s, c) in enumerate(zip(means, stds, colours)):
+        ax.plot(positions[i], m, 'o', color=c, markersize=8)
+    ax.set_title("Average Body Mass by Animal Class (Mean ± SD)")
+
+# --- Strip (Jitter) ---
 else:
-    for i, cls in enumerate(classes):
+    for i, (cls, color) in enumerate(zip(classes, colours)):
         y_vals = plot_data.loc[plot_data["Class (common name)"] == cls, "body mass (kg)"]
         jitter_x = np.random.normal(i, 0.08, len(y_vals))
-        ax.scatter(jitter_x, y_vals, alpha=0.6, label=cls, s=10)
+        ax.scatter(jitter_x, y_vals, alpha=0.6, s=10, color=color, label=cls)
+    ax.set_title("Body Mass by Animal Class (Strip Plot)")
 
+# --- Formatting ---
 ax.set_xticks(positions)
 ax.set_xticklabels(classes, rotation=45, ha="right")
 ax.set_xlabel("Animal Class")
 ax.set_ylabel("Body Mass (kg)")
-ax.set_title("Body Mass by Animal Class")
-ax.set_ylim(1e-8, 1e3)  # Match histogram range
+ax.set_ylim(1e-8, 1e3)  # consistent with histogram section
 if scale_option == "Logarithmic":
     ax.set_yscale("log")
 
 fig.tight_layout()
 st.pyplot(fig, use_container_width=True)
+
+st.markdown("""
+💬 **Reflection:**  
+How does each type of graph help you see the differences between animal groups?  
+Which groups tend to have larger or smaller body masses?  
+How does the **log scale** change your understanding of the data?
+""")
+
 
 
 

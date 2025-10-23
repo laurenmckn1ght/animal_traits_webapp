@@ -11,12 +11,12 @@ Students can:
 - record and download their observations.
 
 ## Files
-- `app.py` – the Streamlit app
+- `streamlit_app.py` – the Streamlit app
 - `observations.csv` – optional dataset file shipped with the app
 - `requirements.txt` – dependencies
 
 ## Local run
 ```bash
 pip install -r requirements.txt
-streamlit run app.py
+streamlit run streamlit_app.py
 ```

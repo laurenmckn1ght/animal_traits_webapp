@@ -43,9 +43,9 @@ st.sidebar.title("🧠 Investigation Guide")
 st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data.")
 
 questions = {
-    "q1": "1) What does each row in the dataset represent? What columns (or variables) are included?",
-    "q2": "2) Search for your favourite species. Choose one species and write down the important variables present in the database",
-    "q3": "3) What is the biggest animal in the dataset? What is the smallest?",
+    "q1": "Q1- What does each row in the dataset represent? What columns (or variables) are included?",
+    "q2": "Q2- Search for your favourite animal. Choose one species and write down its family and order and the important variables present in the database",
+    "q3": "Q3- What is the biggest animal in the dataset? What is the smallest?",
     "q4": "What hypotheses could you form from these observations?",
     "q5": "What further data or tests would help you confirm your ideas?"
 }
@@ -86,7 +86,7 @@ st.subheader("Plot a Histogram")
 # Dropdown for variable selection
 variable_option = st.selectbox(
     "Choose a variable to plot:",
-    options=["body mass", "brain size"],
+    options=["body mass (kg)", "brain size (kg)"],
     index=0
 )
 
@@ -100,14 +100,14 @@ buckets_option = st.number_input(
 
 # Labels for plotting
 labels_list = {
-    'body mass': 'Body Mass (kilograms)',
-    'brain size': 'Brain Size (kilograms)'
+    'body mass (kg)': 'Body Mass (kilograms)',
+    'brain size (kg)': 'Brain Size (kilograms)'
 }
 label = labels_list[variable_option]
 
 # Create histogram
 fig, ax = plt.subplots()
-ax.hist(data[variable_option], bins=int(buckets_option))
+ax.hist(data[variable_option].dropna(), bins=int(buckets_option))
 ax.set_xlabel(label)
 ax.set_ylabel("Frequency")
 ax.set_title(f"Distribution of {label}")
@@ -115,6 +115,8 @@ ax.set_title(f"Distribution of {label}")
 st.pyplot(fig)
 
 st.markdown("💡 **Tip:** Look at the shape of the histogram — is most of the data clustered together, or spread out?")
+
+
 st.subheader("B) Visualise relationships")
 st.caption("Choose two numeric variables. Try different axis scales and look for linear, curved, or clustered patterns.")
 if len(num_cols) < 2:

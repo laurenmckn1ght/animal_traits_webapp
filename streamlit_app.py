@@ -1,6 +1,4 @@
 
-import io
-import math
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -9,22 +7,19 @@ import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 import streamlit as st
 
-st.set_page_config(page_title="CURIOUS Animal Traits", layout="wide")
+st.set_page_config(page_title="🐘🐘CURIOUS Animal Traits🐘🐘", layout="wide")
 
 st.title("CURIOUS Animal Traits")
 st.write("""Authors: James Cleaver, Lauren McKnight, Maria Pettyjohn
 
-In this activity you will use data science to identify patterns and relationships in data, and draw conclusions.
+In this activity you will use data science to identify patterns and relationships in data and draw conclusions.
 
-You will be exploring a database of terrestrial (land-dwelling) animals curated from thousands of scientific papers.
+You will be exploring an open database of terrestrial (land-dwelling) animals curated from thousands of scientific papers.
 
 You can read more about the data set at animaltraits.org
 
-Let's get started!)""")
+Let's get started!""")
 
-import streamlit as st
-import pandas as pd
-from pathlib import Path
 
 # --- Configuration ---
 DEFAULT_CSV = "observations2.csv"
@@ -34,7 +29,7 @@ if Path(DEFAULT_CSV).exists():
     try:
         data = pd.read_csv(DEFAULT_CSV)
     except Exception as e:
-        st.error(f"❌ Could not read {DEFAULT_CSV}: {e}")
+        st.error(f" Could not read {DEFAULT_CSV}: {e}")
         st.stop()
 else:
     st.error(f"⚠️ Default CSV '{DEFAULT_CSV}' not found in the app folder.")
@@ -46,8 +41,8 @@ st.sidebar.title("🧠 Investigation Guide")
 st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data.")
 
 questions = {
-    "q1": "What does each column in the dataset represent?",
-    "q2": "What patterns or trends do you notice?",
+    "q1": "What does each row in the dataset represent? What columns (or variables) are included?",
+    "q2": "Search for your favourite species. Choose one species and write down the important variables present in the database",
     "q3": "Are there any outliers or surprising results?",
     "q4": "What hypotheses could you form from these observations?",
     "q5": "What further data or tests would help you confirm your ideas?"
@@ -59,19 +54,15 @@ for key, question in questions.items():
 
 # --- Main page ---
 st.title("Dataset Viewer")
-st.subheader("Data preview")
+st.subheader("A) Data preview")
+st.write("""If you hover over the table, a magnifying glass will appear top right that you can use to search for your favourite animal.
+         
+         Answer questions 1 and 2 in the sidebar""")
 st.caption(f"Displaying contents of **{DEFAULT_CSV}**.")
 st.dataframe(data, use_container_width=True)
 
-# --- Display saved responses ---
-st.subheader("Your responses")
-st.write("Here’s a summary of what you’ve written so far:")
-for key, question in questions.items():
-    st.markdown(f"**{question}**")
-    st.write(responses[key] or "_No response yet_")
-    st.markdown("---")
 
-st.subheader("2) Visualise relationships")
+st.subheader("2. Visualise relationships")
 st.caption("Choose two numeric variables. Try different axis scales and look for linear, curved, or clustered patterns.")
 if len(num_cols) < 2:
     st.info("Need at least two numeric columns to plot a relationship.")

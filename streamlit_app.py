@@ -349,62 +349,66 @@ with c3:
 
 show_fit = st.checkbox("Show line of best fit", value=True)
 
-# --- Clean and subset data ---
-subset = plot_data[[x_var, y_var, "Class (common name)"]].dropna()
+# --- Prepare subset ---
+subset = plot_data[[x_var, y_var, "Class (common name)"]].copy()
+
+# Convert safely to numeric
+subset[x_var] = pd.to_numeric(subset[x_var], errors="coerce")
+subset[y_var] = pd.to_numeric(subset[y_var], errors="coerce")
+
+# Drop non-numeric, zero, or negative values
+subset = subset.dropna(subset=[x_var, y_var])
 subset = subset[(subset[x_var] > 0) & (subset[y_var] > 0)]
 
 if subset.empty:
-    st.warning("No valid data available for these variables — they must contain positive values for log–log plotting.")
+    st.warning(f"No positive values available for {x_var} and {y_var}. Try a different combination.")
 else:
-    classes = subset["Class (common name)"].unique()
-    colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))
-
-    # --- Plot ---
     fig, ax = plt.subplots(figsize=(7, 5))
 
-    # All species
+    # --- Scatter: all points ---
     ax.scatter(
         subset[x_var],
         subset[y_var],
-        color="lightgrey",
         s=25,
+        color="lightgrey",
         alpha=0.6,
         edgecolor="none",
         label="All species"
     )
 
-    # Highlight one group if selected
+    # --- Highlight one class (optional) ---
     if highlight_class != "All":
         highlight_data = subset[subset["Class (common name)"] == highlight_class]
-        ax.scatter(
-            highlight_data[x_var],
-            highlight_data[y_var],
-            s=40,
-            color="tab:red",
-            edgecolor="black",
-            linewidth=0.3,
-            alpha=0.9,
-            label=highlight_class
-        )
+        if not highlight_data.empty:
+            ax.scatter(
+                highlight_data[x_var],
+                highlight_data[y_var],
+                s=40,
+                color="tab:red",
+                alpha=0.9,
+                edgecolor="black",
+                linewidth=0.3,
+                label=highlight_class
+            )
 
-        if show_fit and len(highlight_data) > 2:
-            # Fit log–log regression
-            x = np.log10(highlight_data[x_var])
-            y = np.log10(highlight_data[y_var])
-            m, b = np.polyfit(x, y, 1)
-            x_line = np.linspace(x.min(), x.max(), 100)
-            y_line = m * x_line + b
-            ax.plot(10**x_line, 10**y_line, color="tab:red", linewidth=2.0, label=f"{highlight_class} best fit")
+            if show_fit and len(highlight_data) > 2:
+                # Fit log–log regression (as before)
+                x = np.log10(highlight_data[x_var])
+                y = np.log10(highlight_data[y_var])
+                m, b = np.polyfit(x, y, 1)
+                x_line = np.linspace(x.min(), x.max(), 100)
+                y_line = m * x_line + b
+                ax.plot(10**x_line, 10**y_line, color="tab:red", linewidth=2.0)
 
-            st.markdown(f"""
-            🔹 **Line of best fit (log–log space):**  
-            `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
-            **Equivalent power-law:**  
-            {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
-            _(Slope = {m:.3f})_
-            """, unsafe_allow_html=True)
+                st.markdown(f"""
+                🔹 **Best-fit line:**  
+                `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
+                **Equivalent:**  
+                {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
+                _(Slope = {m:.3f})_
+                """, unsafe_allow_html=True)
 
-    # --- Axes and style ---
+    # --- Apply scaling and labels ---
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel(x_var)
@@ -416,6 +420,7 @@ else:
     fig.tight_layout()
 
     st.pyplot(fig, use_container_width=True)
+
 
 # --- Reflection ---
 st.markdown("""

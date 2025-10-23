@@ -17,45 +17,59 @@ st.write("""Authors: James Cleaver, Lauren McKnight, Maria Pettyjohn
 In this activity you will use data science to identify patterns and relationships in data, and draw conclusions.
 
 You will be exploring a database of terrestrial (land-dwelling) animals curated from thousands of scientific papers.
+
 You can read more about the data set at animaltraits.org
+
 Let's get started!)""")
 
-# --- Data loading ---
-DEFAULT_CSV = "observations.csv"
-data = None
+import streamlit as st
+import pandas as pd
+from pathlib import Path
 
-data_src = st.sidebar.selectbox("Data source", ["Use bundled observations.csv", "Upload CSV"])
-if data_src == "Use bundled observations.csv":
-    if Path(DEFAULT_CSV).exists():
-        try:
-            data = pd.read_csv(DEFAULT_CSV)
-        except Exception as e:
-            st.error(f"Could not read {DEFAULT_CSV}: {e}")
-    else:
-        st.warning("observations.csv not found in the app folder. Please upload a CSV instead.")
+# --- Configuration ---
+DEFAULT_CSV = "observations2.csv"
+
+# --- Load data automatically ---
+if Path(DEFAULT_CSV).exists():
+    try:
+        data = pd.read_csv(DEFAULT_CSV)
+    except Exception as e:
+        st.error(f"❌ Could not read {DEFAULT_CSV}: {e}")
+        st.stop()
 else:
-    up = st.sidebar.file_uploader("Upload a CSV file", type=["csv"])
-    if up is not None:
-        try:
-            data = pd.read_csv(up)
-        except Exception as e:
-            st.error(f"Could not read uploaded CSV: {e}")
-
-if data is None:
+    st.error(f"⚠️ Default CSV '{DEFAULT_CSV}' not found in the app folder.")
     st.stop()
 
-st.subheader("1) Explore the dataset")
-st.caption("Use the tools below to inspect the table and choose the columns to focus on.")
-with st.expander("Preview data", expanded=True):
-    st.dataframe(data.head(20), use_container_width=True)
+# --- Sidebar with guiding questions ---
+st.sidebar.title("🧠 Investigation Guide")
 
-# Identify numeric columns for plotting/model
-num_cols = [c for c in data.columns if pd.api.types.is_numeric_dtype(data[c])]
-cat_cols = [c for c in data.columns if pd.api.types.is_string_dtype(data[c]) or pd.api.types.is_categorical_dtype(data[c])]
+st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data.")
 
-col_select = st.multiselect("Pick columns to include in the working table", options=list(data.columns), default=list(num_cols)[:5] or list(data.columns)[:5])
-work_df = data[col_select].copy()
-st.dataframe(work_df.head(20), use_container_width=True)
+questions = {
+    "q1": "What does each column in the dataset represent?",
+    "q2": "What patterns or trends do you notice?",
+    "q3": "Are there any outliers or surprising results?",
+    "q4": "What hypotheses could you form from these observations?",
+    "q5": "What further data or tests would help you confirm your ideas?"
+}
+
+responses = {}
+for key, question in questions.items():
+    responses[key] = st.sidebar.text_area(question, height=80)
+
+# --- Main page ---
+st.title("Dataset Viewer")
+st.subheader("Data preview")
+st.caption(f"Displaying contents of **{DEFAULT_CSV}**.")
+st.dataframe(data, use_container_width=True)
+
+# --- Display saved responses ---
+st.subheader("Your responses")
+st.write("Here’s a summary of what you’ve written so far:")
+for key, question in questions.items():
+    st.markdown(f"**{question}**")
+    st.write(responses[key] or "_No response yet_")
+    st.markdown("---")
 
 st.subheader("2) Visualise relationships")
 st.caption("Choose two numeric variables. Try different axis scales and look for linear, curved, or clustered patterns.")

@@ -295,6 +295,37 @@ st.markdown("""
 
 
 # --- Section: Explore Relationships Between Variables ---
+
+
+st.subheader("Data quality check (for numeric variables)")
+
+check_cols = [
+    "body mass (kg)",
+    "brain size (kg)",
+    "metabolic rate (W)",
+    "mass-specific metabolic rate (W/kg)"
+]
+
+summary = []
+for col in check_cols:
+    # make sure it’s treated as numeric
+    s = pd.to_numeric(data[col], errors="coerce")
+    summary.append({
+        "Variable": col,
+        "Count (non-null)": int(s.notna().sum()),
+        "Zeros": int((s == 0).sum()),
+        "Negatives": int((s < 0).sum()),
+        "Positives": int((s > 0).sum()),
+        "Min": s.min(),
+        "Max": s.max(),
+        "Dtype": data[col].dtype
+    })
+
+summary_df = pd.DataFrame(summary)
+st.dataframe(summary_df, use_container_width=True)
+
+
+
 st.header("D) Explore Relationships Between Variables")
 
 st.write("""

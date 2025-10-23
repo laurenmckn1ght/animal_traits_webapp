@@ -427,3 +427,65 @@ For example:
 """)
 
 
+import io
+import base64
+
+st.header("E) Your Reflections Summary")
+
+st.write("Here's a summary of your answers to the reflection questions throughout this activity.")
+
+# --- Example placeholder answers ---
+# Replace these with the actual variables you collected (if using st.session_state or similar)
+answers = {
+    "Q1": st.session_state.get("q1", "Describe your first observation."),
+    "Q2": st.session_state.get("q2", "What patterns did you notice in the histogram?"),
+    "Q3": st.session_state.get("q3", "What is the biggest and smallest animal in the dataset?"),
+    "Q4": st.session_state.get("q4", "Did a log or linear scale help you see patterns better?"),
+    "Q5": st.session_state.get("q5", "Which graph best showed class differences?"),
+    "Q6": st.session_state.get("q6", "What does the slope tell you about how two traits relate?"),
+}
+
+summary_df = pd.DataFrame(list(answers.items()), columns=["Question", "Your Answer"])
+st.dataframe(summary_df, use_container_width=True, hide_index=True)
+
+# --- Download as CSV ---
+csv_buffer = io.StringIO()
+summary_df.to_csv(csv_buffer, index=False)
+csv_bytes = csv_buffer.getvalue().encode("utf-8")
+b64_csv = base64.b64encode(csv_bytes).decode()
+download_link = f'<a href="data:text/csv;base64,{b64_csv}" download="your_answers.csv">📥 Download as CSV</a>'
+
+# --- Copy table (simple clipboard using JavaScript) ---
+copy_script = """
+<script>
+function copyTable() {
+  const text = document.getElementById('answers-table').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Table copied to clipboard!');
+  });
+}
+</script>
+<button onclick="copyTable()">📋 Copy Table</button>
+<pre id='answers-table'>""" + summary_df.to_string(index=False) + "</pre>"
+
+# --- Screenshot option ---
+screenshot_script = """
+<script>
+function takeScreenshot() {
+  html2canvas(document.body).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'answers_screenshot.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+</script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<button onclick="takeScreenshot()">📸 Take Screenshot</button>
+"""
+
+st.markdown(download_link, unsafe_allow_html=True)
+st.markdown(copy_script, unsafe_allow_html=True)
+st.markdown(screenshot_script, unsafe_allow_html=True)
+
+

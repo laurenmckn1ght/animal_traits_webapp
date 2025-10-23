@@ -12,15 +12,21 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="CURIOUS Animal Traits", layout="wide")
 
 st.title("🐘🐘CURIOUS Animal Traits🐘🐘")
-st.write("""Authors: James Cleaver, Lauren McKnight, Maria Pettyjohn
+st.caption("Authors: James Cleaver, Lauren McKnight, Maria Pettyjohn")
 
-In this activity you will use data science to identify patterns and relationships in data and draw conclusions. 
+st.write("""In this activity, you’ll use **data science** to explore patterns in a large dataset (big data) and create **data visualisations** to help you make sense of what you see.
 
-You will be exploring an open database of terrestrial (land-dwelling) animals curated from thousands of scientific papers.
+You’ll be exploring an open database of **land-dwelling animals**, compiled from thousands of scientific papers. You can read more abou this dataset at animaltraits.org
 
-NOTE: Common names were added using an external database and may not be correct.
+Starting with something familiar — **animal body size** — you’ll learn how scientists use data to spot patterns and relationships.
 
-Let's get started!""")
+Along the way, you’ll practise thinking like a data scientist: organising and exploring data, choosing effective scales, and visualising relationships to explain what the data tells us about the natural world.
+
+The sidebar works as your digital worksheet to keep track of your observations. The traffic light emoji 🚦 will point out when to answer a sidebar question.
+
+Let's get started!
+""")
+
 
 
 # --- Configuration ---
@@ -46,8 +52,8 @@ questions = {
     "q1": "Q1- What does each row in the dataset represent? What columns (or variables) are included?",
     "q2": "Q2- Search for your favourite animal. Choose one species and write down its family and order and the important variables present in the database",
     "q3": "Q3- What is the biggest animal in the dataset? What is the smallest?",
-    "q4": "What hypotheses could you form from these observations?",
-    "q5": "What further data or tests would help you confirm your ideas?"
+    "q4": "Q4- Compare the linear and log scales. Which one helped you understand the distribution of body masses better? Why? (What does that tell you about how animal body sizes are spread across the dataset?)",
+    "q5": "Q5- What further data or tests would help you confirm your ideas?"
 }
 
 responses = {}
@@ -71,13 +77,13 @@ A **variable** is something that can vary or change between animals — like bod
 In this dataset, each column represents a variable describing some aspect of the animals.
 """)
 
-st.write("🚦 Click the column headings to sort the data by **body mass (kg)**, then answer Question 3 in the sidebar.")
+st.write("🚦 Using the table above, click the column heading to sort the data by **body mass (kg)**, then answer Question 3 in the sidebar.")
 
 # --- Brief data visualisation explanation ---
 st.subheader("Understanding Data Visualisation")
 st.write("""
-A **data visualisation** helps us see patterns and trends in the data more easily than looking at a table of numbers.
-A **histogram** shows how frequently different values occur — for example, how many animals fall into each weight range.
+**Data visualisation** means creating graphs or charts based on a dataset. This can help us to see patterns and trends in the data more easily than looking at a table of numbers.
+A **histogram** is a type of graph that shows how frequently different values occur — for example, how many animals fall into each weight range.
 """)
 
 # --- Histogram Section ---
@@ -98,6 +104,13 @@ buckets_option = st.number_input(
     value=20
 )
 
+# Radio button for scale selection
+scale_option = st.radio(
+    "Choose the scale for the x-axis:",
+    options=["Linear", "Logarithmic"],
+    horizontal=True
+)
+
 # Labels for plotting
 labels_list = {
     'body mass (kg)': 'Body Mass (kilograms)',
@@ -105,16 +118,31 @@ labels_list = {
 }
 label = labels_list[variable_option]
 
+# Prepare data (remove NaN and non-positive for log scale)
+plot_data = data[variable_option].dropna()
+if scale_option == "Logarithmic":
+    plot_data = plot_data[plot_data > 0]
+
 # Create histogram
 fig, ax = plt.subplots()
-ax.hist(data[variable_option].dropna(), bins=int(buckets_option))
+ax.hist(plot_data, bins=int(buckets_option))
 ax.set_xlabel(label)
 ax.set_ylabel("Frequency")
-ax.set_title(f"Distribution of {label}")
+ax.set_title(f"Distribution of {label} ({scale_option} scale)")
+
+# Apply log scaling if chosen
+if scale_option == "Logarithmic":
+    ax.set_xscale("log")
 
 st.pyplot(fig)
 
-st.markdown("💡 **Tip:** Look at the shape of the histogram — is most of the data clustered together, or spread out?")
+# --- Tip and reflection ---
+st.markdown("""
+💡 A *logarithmic scale* spaces numbers according to their **powers of ten** rather than evenly.  
+This makes very large and very small values easier to see together — for example, animals that differ by a thousand times in mass.
+
+🚦 Try using different scales for body mass to find the most helpful visualisation. Then answer Question 4 in the sidebar.
+""")
 
 
 st.subheader("B) Visualise relationships")

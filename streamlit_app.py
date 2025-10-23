@@ -18,7 +18,7 @@ In this activity you will use data science to identify patterns and relationship
 
 You will be exploring a database of terrestrial (land-dwelling) animals curated from thousands of scientific papers.
 You can read more about the data set at animaltraits.org
-Let's get started!")"""
+Let's get started!)""")
 
 # --- Data loading ---
 DEFAULT_CSV = "observations.csv"

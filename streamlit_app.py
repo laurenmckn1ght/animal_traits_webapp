@@ -48,7 +48,7 @@ else:
 # --- Sidebar with guiding questions ---
 st.sidebar.title("🧠 Investigation Guide")
 
-st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data. You can view your answers at the end, but they will not be saved if the page closes or refreshes")
+st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data. Note that answers will not be saved if the page closes or refreshes")
 
 questions = {
     "q1": "Q1- What does each row in the dataset represent? What columns (or variables) are included?",
@@ -427,36 +427,3 @@ For example:
 """)
 
 
-import io
-import base64
-
-st.header("E) Your Reflections Summary")
-
-st.write("""
-Here's a summary of your answers to the reflection questions throughout this activity.  
-You can **download a CSV** of your answers, or simply **take a screenshot** to save them for your notes.
-""")
-
-# --- Gather responses (replace these with real session_state values if used earlier) ---
-answers = {
-    "Describe your first observation.": st.session_state.get("q1", ""),
-    "What patterns did you notice in the histogram?": st.session_state.get("q2", ""),
-    "What is the biggest and smallest animal in the dataset?": st.session_state.get("q3", ""),
-    "Did a log or linear scale help you see patterns better?": st.session_state.get("q4", ""),
-    "Which graph best showed class differences?": st.session_state.get("q5", ""),
-    "What does the slope tell you about how two traits relate?": st.session_state.get("q6", ""),
-}
-
-summary_df = pd.DataFrame(list(answers.items()), columns=["Question", "Your Answer"])
-st.dataframe(summary_df, use_container_width=True, hide_index=True)
-
-# --- Download CSV link ---
-csv_buffer = io.StringIO()
-summary_df.to_csv(csv_buffer, index=False)
-csv_bytes = csv_buffer.getvalue().encode("utf-8")
-b64_csv = base64.b64encode(csv_bytes).decode()
-download_link = f'<a href="data:text/csv;base64,{b64_csv}" download="your_reflections.csv">📥 Download your answers as CSV</a>'
-
-st.markdown(download_link, unsafe_allow_html=True)
-
-st.info("💡 If downloading doesn’t work on your device, take a screenshot of your answers instead.")

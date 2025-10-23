@@ -56,7 +56,7 @@ questions = {
     "q3": "Q3- What is the biggest animal in the dataset? What is the smallest?",
     "q4": "Q4- Compare the linear and log scales. Which one helped you understand the distribution of body masses better? Why? (What does that tell you about how animal body sizes are spread across the dataset?)",
     "q5": "Q5- Which type of graph helped you compare the animal classes most clearly?",
-    "q6": "Q6- Which two variables did you find the most interesting to visualise? Describe the pattern and how it differes for the species group you chose.
+    "q6": "Q6- Which two variables did you find the most interesting to visualise? Describe the relationship. Is it different within a particular class?"
 }
 
 responses = {}

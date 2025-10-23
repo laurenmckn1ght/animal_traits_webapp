@@ -65,7 +65,7 @@ for key, question in questions.items():
 # --- Main page ---
 st.title("Dataset Viewer")
 st.header("A) Data preview")
-st.write("The dataset is displayed in the table below"
+st.write("The dataset is displayed in the table below")
 st.caption(f"Displaying contents of **{DEFAULT_CSV}**.")
 st.dataframe(data, use_container_width=True)
 st.write("If you hover over the table, a magnifying glass will appear top right that you can use to search for your favourite animal.")
@@ -261,7 +261,7 @@ st.markdown("""
 
 
 
-
+"""
 st.header("B) Visualise relationships between variables")
 st.caption("Choose two numeric variables. Try different axis scales and look for linear, curved, or clustered patterns.")
 if len(num_cols) < 2:
@@ -354,3 +354,4 @@ notes_df = pd.DataFrame([notes])
 st.download_button("Download my observations (CSV)", notes_df.to_csv(index=False).encode("utf-8"), file_name="observations_notes.csv", mime="text/csv")
 
 st.caption("Tip for teachers: ship an 'observations.csv' with the class dataset, or instruct students to upload one. The app hides all code and focuses on exploration, simple modelling, and note taking.")    
+"""

@@ -382,14 +382,14 @@ else:
 
                 # Show equation + slope
                 st.markdown(
-    f"""
-    🔹 **Best-fit line (log–log):**  
-    `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
-    **Equivalent power-law:**  
-    `{y_var} ≈ 10^{b:.3f} × ({x_var})^{m:.3f}`  
-    _(Slope / exponent = {m:.3f})_
-    """
-)
+                    f"""
+                    🔹 **Best-fit line (log–log):**  
+                    `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
+                    **Equivalent power-law:**  
+                    `{y_var} ≈ 10^{b:.3f} × ({x_var})^{m:.3f}`  
+                    _(Slope / exponent = {m:.3f})_
+                    """
+                )
                 
 
     # Axes + styling (always log–log)
@@ -432,46 +432,31 @@ import base64
 
 st.header("E) Your Reflections Summary")
 
-st.write("Here's a summary of your answers to the reflection questions throughout this activity.")
+st.write("""
+Here's a summary of your answers to the reflection questions throughout this activity.  
+You can **download a CSV** of your answers, or simply **take a screenshot** to save them for your notes.
+""")
 
-# --- Example placeholder answers ---
-# Replace these with the actual variables you collected (if using st.session_state or similar)
+# --- Gather responses (replace these with real session_state values if used earlier) ---
 answers = {
-    "Q1": st.session_state.get("q1", "Describe your first observation."),
-    "Q2": st.session_state.get("q2", "What patterns did you notice in the histogram?"),
-    "Q3": st.session_state.get("q3", "What is the biggest and smallest animal in the dataset?"),
-    "Q4": st.session_state.get("q4", "Did a log or linear scale help you see patterns better?"),
-    "Q5": st.session_state.get("q5", "Which graph best showed class differences?"),
-    "Q6": st.session_state.get("q6", "What does the slope tell you about how two traits relate?"),
+    "Describe your first observation.": st.session_state.get("q1", ""),
+    "What patterns did you notice in the histogram?": st.session_state.get("q2", ""),
+    "What is the biggest and smallest animal in the dataset?": st.session_state.get("q3", ""),
+    "Did a log or linear scale help you see patterns better?": st.session_state.get("q4", ""),
+    "Which graph best showed class differences?": st.session_state.get("q5", ""),
+    "What does the slope tell you about how two traits relate?": st.session_state.get("q6", ""),
 }
 
 summary_df = pd.DataFrame(list(answers.items()), columns=["Question", "Your Answer"])
 st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
-# --- Download as CSV ---
+# --- Download CSV link ---
 csv_buffer = io.StringIO()
 summary_df.to_csv(csv_buffer, index=False)
 csv_bytes = csv_buffer.getvalue().encode("utf-8")
 b64_csv = base64.b64encode(csv_bytes).decode()
-download_link = f'<a href="data:text/csv;base64,{b64_csv}" download="your_answers.csv">📥 Download as CSV</a>'
-
-# --- Copy table (simple clipboard using JavaScript) ---
-copy_script = """
-<script>
-function copyTable() {
-  const text = document.getElementById('answers-table').innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    alert('Table copied to clipboard!');
-  });
-}
-</script>
-<button onclick="copyTable()">📋 Copy Table</button>
-<pre id='answers-table'>""" + summary_df.to_string(index=False) + "</pre>"
-
-
+download_link = f'<a href="data:text/csv;base64,{b64_csv}" download="your_reflections.csv">📥 Download your answers as CSV</a>'
 
 st.markdown(download_link, unsafe_allow_html=True)
-st.markdown(copy_script, unsafe_allow_html=True)
 
-
-
+st.info("💡 If downloading doesn’t work on your device, take a screenshot of your answers instead.")

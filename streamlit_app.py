@@ -18,6 +18,8 @@ st.write("""In this activity, you’ll use **data science** to explore patterns 
 
 You’ll be exploring an open database of **land-dwelling animals**, compiled from thousands of scientific papers. You can read more abou this dataset at animaltraits.org
 
+NOTE: The *common name* column was added to the animaltraits.org dataset by automatic searching of other tables. This column may include some errors.
+
 Starting with something familiar — **animal body size** — you’ll learn how scientists use data to spot patterns and relationships.
 
 Along the way, you’ll practise thinking like a data scientist: organising and exploring data, choosing effective scales, and visualising relationships to explain what the data tells us about the natural world.
@@ -46,14 +48,14 @@ else:
 # --- Sidebar with guiding questions ---
 st.sidebar.title("🧠 Investigation Guide")
 
-st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data.")
+st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data. You can view your answers at the end, but they will not be saved if the page closes or refreshes")
 
 questions = {
     "q1": "Q1- What does each row in the dataset represent? What columns (or variables) are included?",
-    "q2": "Q2- Search for your favourite animal. Choose one species and write down its family and order and the important variables present in the database",
+    "q2": "Q2- Search for your favourite animal. Write down its species name and the 'class' it is in. ",
     "q3": "Q3- What is the biggest animal in the dataset? What is the smallest?",
     "q4": "Q4- Compare the linear and log scales. Which one helped you understand the distribution of body masses better? Why? (What does that tell you about how animal body sizes are spread across the dataset?)",
-    "q5": "Q5- What further data or tests would help you confirm your ideas?"
+    "q5": "Q5- Which type of graph helped you compare the animal classes most clearly?"
 }
 
 responses = {}
@@ -62,14 +64,14 @@ for key, question in questions.items():
 
 # --- Main page ---
 st.title("Dataset Viewer")
-st.subheader("A) Data preview")
+st.header("A) Data preview")
+st.write("The dataset is displayed in the table below"
+st.caption(f"Displaying contents of **{DEFAULT_CSV}**.")
+st.dataframe(data, use_container_width=True)
 st.write("If you hover over the table, a magnifying glass will appear top right that you can use to search for your favourite animal.")
 
 
 st.write("🚦 Answer questions 1-2 in the sidebar")
-st.caption(f"Displaying contents of **{DEFAULT_CSV}**.")
-st.dataframe(data, use_container_width=True)
-
 # --- Section: Explore a single variable ---
 st.header("B) Exploring One Variable: Body Mass (kg)")
 st.write("""
@@ -124,17 +126,19 @@ if scale_option == "Logarithmic":
     plot_data = plot_data[plot_data > 0]
 
 # Create histogram
-fig, ax = plt.subplots()
-ax.hist(plot_data, bins=int(buckets_option))
+fig, ax = plt.subplots(figsize=(6, 4))  # width, height in inches
+ax.hist(plot_data, bins=int(buckets_option), color="#1f77b4", edgecolor="black")
 ax.set_xlabel(label)
 ax.set_ylabel("Frequency")
-ax.set_title(f"Distribution of {label} ({scale_option} scale)")
+ax.set_title(f"Distribution of {label} ({scale_option} scale)", fontsize=12)
+ax.tick_params(axis="both", labelsize=10)
 
 # Apply log scaling if chosen
 if scale_option == "Logarithmic":
     ax.set_xscale("log")
 
-st.pyplot(fig)
+st.pyplot(fig, use_container_width=False)
+
 
 # --- Tip and reflection ---
 st.markdown("""
@@ -144,8 +148,121 @@ This makes very large and very small values easier to see together — for examp
 🚦 Try using different scales for body mass to find the most helpful visualisation. Then answer Question 4 in the sidebar.
 """)
 
+# --- Section: Compare Animal Classes ---
+st.header("C) Comparing Animal Classes")
 
-st.subheader("B) Visualise relationships")
+st.write("""
+Now let’s compare how **body mass** differs between different groups of animals.
+
+Each *class* represents a broad group, such as mammals, birds, or reptiles.
+Different types of graphs help us see how each group’s data are distributed and whether some groups tend to be heavier or lighter than others.
+""")
+
+# --- Map scientific class names to familiar common names ---
+class_labels = {
+    "Amphibia": "Amphibians",
+    "Arachnida": "Spiders & Scorpions",
+    "Aves": "Birds",
+    "Insecta": "Insects",
+    "Malacostraca": "Crustaceans",
+    "Mammalia": "Mammals",
+    "Clitellata": "Worms",
+    "Gastropoda": "Snails & Slugs",
+    "Reptilia": "Reptiles",
+    "Chilopoda": "Centipedes"
+}
+
+# Add a new column with readable names
+data["Class (common name)"] = data["class"].map(class_labels).fillna(data["class"])
+
+# --- Choose graph type ---
+graph_type = st.selectbox(
+    "Choose a graph type to compare the classes:",
+    ["Box and Whisker", "Violin Plot", "Swarm Plot", "Overlapping Histograms"]
+)
+
+# --- Choose scale ---
+scale_option = st.radio(
+    "Choose the scale for the x-axis:",
+    options=["Linear", "Logarithmic"],
+    horizontal=True
+)
+
+# --- Prepare data ---
+plot_data = data.dropna(subset=["body mass (kg)", "class"]).copy()
+if scale_option == "Logarithmic":
+    plot_data = plot_data[plot_data["body mass (kg)"] > 0]
+
+# --- Plot depending on graph type ---
+fig, ax = plt.subplots(figsize=(7, 4))
+
+if graph_type == "Box and Whisker":
+    import seaborn as sns
+    sns.boxplot(
+        data=plot_data,
+        x="body mass (kg)",
+        y="Class (common name)",
+        orient="h",
+        ax=ax,
+        palette="Set3",
+        fliersize=2,
+    )
+    ax.set_title("Body Mass by Animal Class (Box & Whisker)")
+
+elif graph_type == "Violin Plot":
+    import seaborn as sns
+    sns.violinplot(
+        data=plot_data,
+        x="body mass (kg)",
+        y="Class (common name)",
+        orient="h",
+        ax=ax,
+        palette="Set2",
+        inner="quartile",
+    )
+    ax.set_title("Body Mass by Animal Class (Violin Plot)")
+
+elif graph_type == "Swarm Plot":
+    import seaborn as sns
+    sns.swarmplot(
+        data=plot_data,
+        x="body mass (kg)",
+        y="Class (common name)",
+        orient="h",
+        ax=ax,
+        size=3,
+        palette="husl",
+    )
+    ax.set_title("Body Mass by Animal Class (Swarm Plot)")
+
+else:  # Overlapping histograms
+    for cls, group in plot_data.groupby("Class (common name)"):
+        ax.hist(
+            group["body mass (kg)"],
+            bins=20,
+            alpha=0.4,
+            label=cls,
+        )
+    ax.legend(fontsize=7)
+    ax.set_title("Body Mass by Animal Class (Overlapping Histograms)")
+
+# Apply scale
+if scale_option == "Logarithmic":
+    ax.set_xscale("log")
+
+ax.set_xlabel("Body Mass (kg)")
+ax.set_ylabel("Animal Class")
+st.pyplot(fig, use_container_width=True)
+
+# --- Reflection question ---
+st.markdown("""
+🚦 Try different graph types. Which do you like the best? Answer question 5 in the sidebar.
+""")
+
+
+
+
+st.header("B) Visualise relationships between variables")
 st.caption("Choose two numeric variables. Try different axis scales and look for linear, curved, or clustered patterns.")
 if len(num_cols) < 2:
     st.info("Need at least two numeric columns to plot a relationship.")

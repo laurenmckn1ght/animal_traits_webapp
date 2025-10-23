@@ -6,19 +6,19 @@ import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 import streamlit as st
+import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="🐘🐘CURIOUS Animal Traits🐘🐘", layout="wide")
 
-st.title("CURIOUS Animal Traits")
+st.set_page_config(page_title="CURIOUS Animal Traits", layout="wide")
+
+st.title("🐘🐘CURIOUS Animal Traits🐘🐘")
 st.write("""Authors: James Cleaver, Lauren McKnight, Maria Pettyjohn
 
-In this activity you will use data science to identify patterns and relationships in data and draw conclusions.
+In this activity you will use data science to identify patterns and relationships in data and draw conclusions. 
 
 You will be exploring an open database of terrestrial (land-dwelling) animals curated from thousands of scientific papers.
 
 NOTE: Common names were added using an external database and may not be correct.
-
-You can read more about the data set at animaltraits.org
 
 Let's get started!""")
 
@@ -43,9 +43,9 @@ st.sidebar.title("🧠 Investigation Guide")
 st.sidebar.markdown("Use this sidebar to record your thinking as you explore the data.")
 
 questions = {
-    "q1": "1. What does each row in the dataset represent? What columns (or variables) are included?",
-    "q2": "2. Search for your favourite species. Choose one species and write down the important variables present in the database",
-    "q3": "3. What is the biggest animal in the dataset? What is the smallest?",
+    "q1": "1) What does each row in the dataset represent? What columns (or variables) are included?",
+    "q2": "2) Search for your favourite species. Choose one species and write down the important variables present in the database",
+    "q3": "3) What is the biggest animal in the dataset? What is the smallest?",
     "q4": "What hypotheses could you form from these observations?",
     "q5": "What further data or tests would help you confirm your ideas?"
 }
@@ -60,18 +60,18 @@ st.subheader("A) Data preview")
 st.write("If you hover over the table, a magnifying glass will appear top right that you can use to search for your favourite animal.")
 
 
-st.write("Answer questions 1-2 in the sidebar")
+st.write("🚦 Answer questions 1-2 in the sidebar")
 st.caption(f"Displaying contents of **{DEFAULT_CSV}**.")
 st.dataframe(data, use_container_width=True)
 
 # --- Section: Explore a single variable ---
-st.header("Exploring One Variable: Body Mass (kg)")
+st.header("B) Exploring One Variable: Body Mass (kg)")
 st.write("""
 A **variable** is something that can vary or change between animals — like body mass, brain size, or metabolic rate (how much energy they use while resting).
 In this dataset, each column represents a variable describing some aspect of the animals.
 """)
 
-st.write("Click the column headings to sort the data by **body mass (kg)**, then answer Question 3 in the sidebar.")
+st.write("🚦 Click the column headings to sort the data by **body mass (kg)**, then answer Question 3 in the sidebar.")
 
 # --- Brief data visualisation explanation ---
 st.subheader("Understanding Data Visualisation")

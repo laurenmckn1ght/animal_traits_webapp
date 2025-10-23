@@ -326,18 +326,19 @@ st.dataframe(summary_df, use_container_width=True)
 
 
 
+# --- Section: Explore Relationships Between Variables (Log–Log) ---
 st.header("D) Explore Relationships Between Variables")
 
 st.write("""
-Now let's explore how different biological traits are related across animals.
-This plot uses **logarithmic scales** on both axes, so we can compare tiny insects and massive mammals together.
-
-Look for patterns — do bigger animals have proportionally bigger brains or higher metabolic rates?
+Use the dropdowns to choose two variables. The plot uses **log scales** on both axes so you can see tiny and huge values together.
+All species are shown in grey; you can **highlight** one animal class. Turn on the **line of best fit** to see the slope/equation.
 """)
 
-# --- Prepare data ---
-plot_data = data.copy()
-plot_data["Class (common name)"] = plot_data["class"].map({
+# Clean column names once (keeps things robust if CSV headings had odd spaces)
+data.columns = data.columns.str.strip().str.replace('\u00a0', ' ', regex=True)
+
+# Map classes to readable names (omit Chilopoda)
+class_map = {
     "Amphibia": "Amphibians",
     "Arachnida": "Spiders & Scorpions",
     "Aves": "Birds",
@@ -346,111 +347,96 @@ plot_data["Class (common name)"] = plot_data["class"].map({
     "Mammalia": "Mammals",
     "Clitellata": "Worms",
     "Gastropoda": "Snails & Slugs",
-    "Reptilia": "Reptiles"
-})
-plot_data = plot_data.dropna(subset=[
-    "body mass (kg)",
-    "metabolic rate (W)",
-    "mass-specific metabolic rate (W/kg)",
-    "brain size (kg)"
-])
+    "Reptilia": "Reptiles",
+}
+plot_data = data.copy()
+plot_data["Class (common name)"] = plot_data["class"].map(class_map)
 
-# --- User controls ---
 variables = [
     "body mass (kg)",
     "metabolic rate (W)",
     "mass-specific metabolic rate (W/kg)",
-    "brain size (kg)"
+    "brain size (kg)",
 ]
 
 c1, c2, c3 = st.columns([1, 1, 1])
 with c1:
     x_var = st.selectbox("X-axis variable:", options=variables, index=0)
 with c2:
-    y_var = st.selectbox(
-        "Y-axis variable:",
-        options=[v for v in variables if v != x_var],
-        index=1  # ✅ was 3, now safe
-    )
+    y_var = st.selectbox("Y-axis variable:", options=[v for v in variables if v != x_var], index=1)
 with c3:
     highlight_class = st.selectbox(
         "Highlight one class (optional):",
         options=["All"] + sorted(plot_data["Class (common name)"].dropna().unique().tolist())
     )
 
-show_fit = st.checkbox("Show line of best fit", value=True)
+show_fit = st.checkbox("Show line of best fit for the highlighted class", value=True)
 
-# --- Prepare subset ---
+# --- Prepare subset safely for log–log ---
 subset = plot_data[[x_var, y_var, "Class (common name)"]].copy()
-
-# Convert safely to numeric
 subset[x_var] = pd.to_numeric(subset[x_var], errors="coerce")
 subset[y_var] = pd.to_numeric(subset[y_var], errors="coerce")
-
-# Drop non-numeric, zero, or negative values
 subset = subset.dropna(subset=[x_var, y_var])
 subset = subset[(subset[x_var] > 0) & (subset[y_var] > 0)]
 
 if subset.empty:
-    st.warning(f"No positive values available for {x_var} and {y_var}. Try a different combination.")
+    st.warning(f"No positive values available for {x_var} and {y_var} after cleaning.")
 else:
     fig, ax = plt.subplots(figsize=(7, 5))
 
-    # --- Scatter: all points ---
+    # All species (grey)
     ax.scatter(
-        subset[x_var],
-        subset[y_var],
-        s=25,
-        color="lightgrey",
-        alpha=0.6,
-        edgecolor="none",
-        label="All species"
+        subset[x_var], subset[y_var],
+        s=25, color="lightgrey", alpha=0.6, edgecolor="none", label="All species"
     )
 
-    # --- Highlight one class (optional) ---
+    # Optional highlight overlay
     if highlight_class != "All":
-        highlight_data = subset[subset["Class (common name)"] == highlight_class]
-        if not highlight_data.empty:
+        hi = subset[subset["Class (common name)"] == highlight_class]
+        if not hi.empty:
             ax.scatter(
-                highlight_data[x_var],
-                highlight_data[y_var],
-                s=40,
-                color="tab:red",
-                alpha=0.9,
-                edgecolor="black",
-                linewidth=0.3,
+                hi[x_var], hi[y_var],
+                s=40, color="tab:red", alpha=0.9, edgecolor="black", linewidth=0.3,
                 label=highlight_class
             )
 
-            if show_fit and len(highlight_data) > 2:
-                # Fit log–log regression (as before)
-                x = np.log10(highlight_data[x_var])
-                y = np.log10(highlight_data[y_var])
-                m, b = np.polyfit(x, y, 1)
-                x_line = np.linspace(x.min(), x.max(), 100)
+            if show_fit and len(hi) > 2:
+                # Fit in log10 space so slope is the scaling exponent
+                x_log = np.log10(hi[x_var].values)
+                y_log = np.log10(hi[y_var].values)
+                m, b = np.polyfit(x_log, y_log, 1)  # y_log = m*x_log + b
+
+                x_line = np.linspace(x_log.min(), x_log.max(), 200)
                 y_line = m * x_line + b
-                ax.plot(10**x_line, 10**y_line, color="tab:red", linewidth=2.0)
+                ax.plot(10**x_line, 10**y_line, color="tab:red", linewidth=2.0, label=f"{highlight_class} best fit")
 
-                st.markdown(f"""
-                🔹 **Best-fit line:**  
-                `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
-                **Equivalent:**  
-                {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
-                _(Slope = {m:.3f})_
-                """, unsafe_allow_html=True)
+                # Show equation + slope
+                st.markdown(
+                    f"""
+                    🔹 **Best-fit line (log–log):**  
+                    `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
+                    **Equivalent power-law:**  
+                    {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
+                    _(Slope / exponent = {m:.3f})_
+                    """,
+                    unsafe_allow_html=True
+                )
 
-    # --- Apply scaling and labels ---
+    # Axes + styling (always log–log)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel(x_var)
     ax.set_ylabel(y_var)
-    ax.set_title(f"{y_var} vs {x_var} (Log–Log Scale)")
+    ax.set_title(f"{y_var} vs {x_var} (Log–Log)")
     ax.legend(fontsize=8, frameon=True)
     ax.grid(True, which="major", linestyle="--", alpha=0.3)
     ax.grid(True, which="minor", linestyle=":", alpha=0.1)
     fig.tight_layout()
 
     st.pyplot(fig, use_container_width=True)
+
+    st.caption(f"Showing {len(subset):,} valid points (positive values only).")
+
 
 
 # --- Reflection ---

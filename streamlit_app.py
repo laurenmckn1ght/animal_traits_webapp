@@ -382,15 +382,15 @@ else:
 
                 # Show equation + slope
                 st.markdown(
-                    f"""
-                    🔹 **Best-fit line (log–log):**  
-                    `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
-                    **Equivalent power-law:**  
-                    {y_var} ≈ 10<sup>{b:.3f}</sup> × ({x_var})<sup>{m:.3f}</sup>  
-                    _(Slope / exponent = {m:.3f})_
-                    """,
-                    unsafe_allow_html=True
-                )
+    f"""
+    🔹 **Best-fit line (log–log):**  
+    `log10({y_var}) = {m:.3f} × log10({x_var}) + {b:.3f}`  
+    **Equivalent power-law:**  
+    `{y_var} ≈ 10^{b:.3f} × ({x_var})^{m:.3f}`  
+    _(Slope / exponent = {m:.3f})_
+    """
+)
+                
 
     # Axes + styling (always log–log)
     ax.set_xscale("log")
@@ -468,24 +468,10 @@ function copyTable() {
 <button onclick="copyTable()">📋 Copy Table</button>
 <pre id='answers-table'>""" + summary_df.to_string(index=False) + "</pre>"
 
-# --- Screenshot option ---
-screenshot_script = """
-<script>
-function takeScreenshot() {
-  html2canvas(document.body).then(canvas => {
-    const link = document.createElement('a');
-    link.download = 'answers_screenshot.png';
-    link.href = canvas.toDataURL();
-    link.click();
-  });
-}
-</script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<button onclick="takeScreenshot()">📸 Take Screenshot</button>
-"""
+
 
 st.markdown(download_link, unsafe_allow_html=True)
 st.markdown(copy_script, unsafe_allow_html=True)
-st.markdown(screenshot_script, unsafe_allow_html=True)
+
 
 

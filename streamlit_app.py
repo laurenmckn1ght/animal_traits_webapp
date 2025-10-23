@@ -276,19 +276,12 @@ ax.set_xticks(positions)
 ax.set_xticklabels(classes, rotation=45, ha="right")
 ax.set_xlabel("Animal Class")
 ax.set_ylabel("Body Mass (kg)")
-ax.set_ylim(1e-8, 1e3)  # consistent with histogram section
+ax.set_ylim(1e-9, 1e3)  # consistent with histogram section
 if scale_option == "Logarithmic":
     ax.set_yscale("log")
 
 fig.tight_layout()
 st.pyplot(fig, use_container_width=True)
-
-st.markdown("""
-💬 **Reflection:**  
-How does each type of graph help you see the differences between animal groups?  
-Which groups tend to have larger or smaller body masses?  
-How does the **log scale** change your understanding of the data?
-""")
 
 
 
@@ -300,98 +293,100 @@ st.markdown("""
 """)
 
 
+# --- Section: Explore Relationships Between Variables ---
+st.header("D) Explore Relationships Between Variables")
 
-"""
-st.header("B) Visualise relationships between variables")
-st.caption("Choose two numeric variables. Try different axis scales and look for linear, curved, or clustered patterns.")
-if len(num_cols) < 2:
-    st.info("Need at least two numeric columns to plot a relationship.")
-else:
-    c1, c2, c3 = st.columns([1,1,1])
-    with c1:
-        xcol = st.selectbox("X variable", options=num_cols, index=0)
-    with c2:
-        ycol = st.selectbox("Y variable", options=[c for c in num_cols if c != xcol], index=min(1, len(num_cols)-1))
-    with c3:
-        color_col = st.selectbox("Colour by (optional)", options=[None] + cat_cols + [c for c in num_cols if c not in [xcol, ycol]], index=0)
+st.write("""
+Now that you’ve explored single variables and compared groups, it’s time to look for **relationships between two variables**.
 
-    scale = st.radio("Axis scaling", options=["Linear", "Log X", "Log Y", "Log-Log"], horizontal=True)
+In this section, you’ll examine how **brain size** and **body mass** relate across animal classes — and how different scaling choices can change what you see.
+""")
 
-    plot_df = work_df[[xcol, ycol]].dropna().copy()
-    if scale in ["Log X", "Log-Log"]:
-        plot_df = plot_df[plot_df[xcol] > 0]
-    if scale in ["Log Y", "Log-Log"]:
-        plot_df = plot_df[plot_df[ycol] > 0]
+# --- Prepare data ---
+plot_data = data.copy()
+plot_data["Class (common name)"] = plot_data["class"].map({
+    "Amphibia": "Amphibians",
+    "Arachnida": "Spiders & Scorpions",
+    "Aves": "Birds",
+    "Insecta": "Insects",
+    "Malacostraca": "Crustaceans",
+    "Mammalia": "Mammals",
+    "Clitellata": "Worms",
+    "Gastropoda": "Snails & Slugs",
+    "Reptilia": "Reptiles"
+})
+plot_data = plot_data.dropna(subset=["body mass (kg)", "brain size (kg)", "Class (common name)"])
+plot_data = plot_data[(plot_data["body mass (kg)"] > 0) & (plot_data["brain size (kg)"] > 0)]
 
-    fig = px.scatter(work_df if color_col else plot_df, x=xcol, y=ycol, color=color_col if color_col else None, opacity=0.8)
-    if scale in ["Log X", "Log-Log"]:
-        fig.update_xaxes(type="log")
-    if scale in ["Log Y", "Log-Log"]:
-        fig.update_yaxes(type="log")
-    fig.update_layout(height=520, margin=dict(l=10,r=10,t=30,b=10))
-    st.plotly_chart(fig, use_container_width=True)
+classes = plot_data["Class (common name)"].unique()
+colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))
 
-    st.markdown("> Write an observation about the shape or pattern you see.")
-    obs1 = st.text_area("Observation", placeholder="Describe patterns: linear, curved, clusters, outliers, proportional changes, etc.", key="obs1")
+# --- User controls ---
+scale_option = st.radio(
+    "Choose axis scale:",
+    ["Linear", "Log X", "Log Y", "Log-Log"],
+    horizontal=True,
+    key="scale_relationship"
+)
 
-st.subheader("3) Fit a simple linear model and check the fit")
-st.caption("This fits y = a + b·x on the chosen variables. If you chose log scales, the model still fits the raw values shown above.")
-if len(num_cols) >= 2:
-    # Prepare data for linear regression on raw values
-    df_fit = work_df[[xcol, ycol]].dropna().copy()
-    if not df_fit.empty:
-        X = df_fit[[xcol]].values.reshape(-1, 1)
-        y = df_fit[ycol].values.reshape(-1, 1)
-        model = LinearRegression()
-        model.fit(X, y)
-        a = float(model.intercept_[0])
-        b = float(model.coef_[0][0])
-        y_pred = model.predict(X).ravel()
-        # R^2
-        r2 = float(model.score(X, y))
+show_fit = st.checkbox("Show a line of best fit for each class", value=True)
 
-        st.write(f"Fitted model: **{ycol} = {a:.3g} + {b:.3g} × {xcol}**")
-        st.write(f"R² = {r2:.3f}")
+# --- Plot ---
+fig, ax = plt.subplots(figsize=(7, 5))
 
-        # Overlay line
-        xs = np.linspace(df_fit[xcol].min(), df_fit[xcol].max(), 100)
-        ys = a + b * xs
-        line = go.Scatter(x=xs, y=ys, mode="lines", name="Linear fit")
-        fig2 = px.scatter(df_fit, x=xcol, y=ycol, opacity=0.75)
-        fig2.add_trace(line)
-        fig2.update_layout(height=520, margin=dict(l=10,r=10,t=30,b=10))
-        st.plotly_chart(fig2, use_container_width=True)
+for cls, color in zip(classes, colours):
+    subset = plot_data[plot_data["Class (common name)"] == cls]
+    ax.scatter(
+        subset["body mass (kg)"],
+        subset["brain size (kg)"],
+        label=cls,
+        alpha=0.7,
+        s=25,
+        color=color,
+        edgecolor="black",
+        linewidth=0.2
+    )
+    if show_fit and len(subset) > 2:
+        # Fit line (on log scale if log-log)
+        x = subset["body mass (kg)"]
+        y = subset["brain size (kg)"]
+        if "Log" in scale_option:
+            x = np.log10(x)
+            y = np.log10(y)
+        m, b = np.polyfit(x, y, 1)
+        x_line = np.linspace(x.min(), x.max(), 100)
+        y_line = m * x_line + b
+        if "Log" in scale_option:
+            x_line = 10**x_line
+            y_line = 10**y_line
+        ax.plot(x_line, y_line, color=color, linewidth=1.5, alpha=0.9)
 
-        st.markdown("> Does a straight line describe the relationship well or poorly?")
-        obs2 = st.text_area("Comment on the fit", placeholder="Consider R², residual spread, outliers, curvature, or distinct groups.", key="obs2")
+# --- Axis scaling ---
+if scale_option in ["Log X", "Log-Log"]:
+    ax.set_xscale("log")
+if scale_option in ["Log Y", "Log-Log"]:
+    ax.set_yscale("log")
 
-        st.subheader("4) Make predictions with your fitted model")
-        st.caption("Enter one or more X values to predict Y using the model above.")
-        pred_x = st.text_input(f"Values of {xcol} (comma separated)", value="")
-        if pred_x.strip():
-            try:
-                xs_in = np.array([float(v) for v in pred_x.split(",")])
-                ys_out = a + b * xs_in
-                pred_df = pd.DataFrame({xcol: xs_in, f"pred_{ycol}": ys_out})
-                st.dataframe(pred_df, use_container_width=True)
-                st.download_button("Download predictions as CSV", pred_df.to_csv(index=False).encode("utf-8"), file_name="predictions.csv", mime="text/csv")
-            except Exception as e:
-                st.error(f"Could not parse input values: {e}")
-    else:
-        st.info("Not enough data to fit a model.")
+# --- Formatting ---
+ax.set_xlabel("Body Mass (kg)")
+ax.set_ylabel("Brain Size (kg)")
+ax.set_title("Brain Size vs Body Mass by Animal Class")
+ax.legend(fontsize=8, frameon=True)
+ax.grid(True, which="major", linestyle="--", alpha=0.3)
+ax.grid(True, which="minor", linestyle=":", alpha=0.1)
+fig.tight_layout()
 
-st.subheader("5) Save your observations")
-st.caption("Download your notes as a CSV to submit or keep.")
-student_name = st.text_input("Your name or initials", "")
-notes = {
-    "name": student_name,
-    "x_variable": xcol if len(num_cols) >= 2 else "",
-    "y_variable": ycol if len(num_cols) >= 2 else "",
-    "obs_plot": st.session_state.get("obs1", ""),
-    "obs_fit": st.session_state.get("obs2", ""),
-}
-notes_df = pd.DataFrame([notes])
-st.download_button("Download my observations (CSV)", notes_df.to_csv(index=False).encode("utf-8"), file_name="observations_notes.csv", mime="text/csv")
+st.pyplot(fig, use_container_width=True)
 
-st.caption("Tip for teachers: ship an 'observations.csv' with the class dataset, or instruct students to upload one. The app hides all code and focuses on exploration, simple modelling, and note taking.")    
-"""
+# --- Reflection prompt ---
+st.markdown("""
+💬 **Reflection:**  
+Each point represents an animal. Lines show how **brain size changes with body mass** within each class.  
+When both axes are on a *logarithmic scale*, a straight line means a **power-law relationship** (e.g., “brain size grows in proportion to body mass”).  
+
+✏️ **Questions to think about (and answer in the sidebar):**  
+- Which animal groups have the steepest (or flattest) slopes?  
+- What might that mean about how brains scale with body size?  
+- How do log scales make the relationship easier to interpret?
+""")
+

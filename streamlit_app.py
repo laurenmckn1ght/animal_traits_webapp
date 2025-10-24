@@ -145,7 +145,7 @@ ax.set_title(f"{scale_option} Distribution of {label}")
 ax.tick_params(axis="both", labelsize=9)
 fig.tight_layout()
 
-st.pyplot(fig, use_container_width=False)
+st.pyplot(fig)
 
 
 # --- Tip and reflection ---
@@ -329,7 +329,7 @@ st.subheader("Demo: Relationship between Body Mass and Brain Size")
 
 st.write("""
 This graph is a *scatter plot* showing the relationship between two variables.  
-The patterns we can see are called *correlations* — this means the variables are "related together" - there is a connection between these traits.  
+The patterns we can see are called *correlations* — this means the variables are *related together* - there is a connection between these traits.  
 Looking for these relationships is one of the important ways scientists discover how the world works. 
 
 Each point on the graph represents a different species.  
@@ -387,7 +387,7 @@ st.divider()
 # 🟦 PART 2 – INTERACTIVE GRAPH (editable version with optional line)
 # ------------------------------------------------------------------
 
-st.subheader("D2) Try it yourself!")
+st.subheader("Try it yourself!")
 
 st.write("""
 In the graph below you can choose different variables to explore.
@@ -395,7 +395,7 @@ In the graph below you can choose different variables to explore.
 
 st.write("""
 Use the dropdowns to choose two variables. 
-All species are shown in grey; you can **highlight** one animal class. Optional: turn on the **line of best fit** to see the slope/equation. (Advanced note: the slope is really interesting to scientists! look up "power laws in scaling" if you want to know more!)
+All species are shown in grey; you can **highlight** one animal class. Optional: turn on the **line of best fit** to see the slope/equation. (Advanced note: the slope is really interesting to scientists! look up **power laws in scaling** if you want to know more!)
 """)
 
 # Clean column names once (keeps things robust if CSV headings had odd spaces)

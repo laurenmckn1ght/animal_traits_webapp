@@ -294,8 +294,6 @@ st.markdown("""
 """)
 
 
-
-
 # --- Section: Explore Relationships Between Variables (Log–Log) ---
 st.header("D) Explore Relationships Between Variables")
 
@@ -329,18 +327,27 @@ variables = [
     "brain size (kg)",
 ]
 
+# --- Default selections ---
+default_x = "body mass (kg)"
+default_y = "brain size (kg)"
+default_highlight = "Mammals"
+
+# --- Layout of selection boxes ---
 c1, c2, c3 = st.columns([1, 1, 1])
 with c1:
-    x_var = st.selectbox("X-axis variable:", options=variables, index=0)
+    x_var = st.selectbox("X-axis variable:", options=variables, index=variables.index(default_x))
 with c2:
-    y_var = st.selectbox("Y-axis variable:", options=[v for v in variables if v != x_var], index=1)
+    y_var = st.selectbox("Y-axis variable:", options=[v for v in variables if v != x_var],
+                         index=[v for v in variables if v != x_var].index(default_y) if default_y in variables else 0)
 with c3:
     highlight_class = st.selectbox(
         "Highlight one class (optional):",
-        options=["All"] + sorted(plot_data["Class (common name)"].dropna().unique().tolist())
+        options=["All"] + sorted(plot_data["Class (common name)"].dropna().unique().tolist()),
+        index=(["All"] + sorted(plot_data["Class (common name)"].dropna().unique().tolist())).index(default_highlight)
     )
 
-show_fit = st.checkbox("Show line of best fit for the highlighted class", value=True)
+# --- Line of best fit unchecked by default ---
+show_fit = st.checkbox("Show line of best fit for the highlighted class", value=False)
 
 # --- Prepare subset safely for log–log ---
 subset = plot_data[[x_var, y_var, "Class (common name)"]].copy()
@@ -390,7 +397,6 @@ else:
                     _(Slope / exponent = {m:.3f})_
                     """
                 )
-                
 
     # Axes + styling (always log–log)
     ax.set_xscale("log")
@@ -404,10 +410,7 @@ else:
     fig.tight_layout()
 
     st.pyplot(fig, use_container_width=True)
-
     st.caption(f"Showing {len(subset):,} valid points (positive values only).")
-
-
 
 # --- Reflection ---
 st.markdown("""

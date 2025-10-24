@@ -56,7 +56,7 @@ questions = {
     "q3": "Q3- What is the biggest animal in the dataset? What is the smallest?",
     "q4": "Q4- Compare the linear and log scales. Which one helped you understand the distribution of body masses better? Why? (What does that tell you about how animal body sizes are spread across the dataset?)",
     "q5": "Q5- Which type of graph helped you compare the animal classes most clearly?",
-    "q6": "Q6- Which two variables did you find the most interesting to visualise? Describe the relationship. Is it different within a particular class?"
+    "q6": "Q6- Describe the relationship between body size and brain size using the template *as body mass increases/decreases, brain size tends to increase/decrease* or by describing the correlation mathematically."
 }
 
 responses = {}
@@ -294,12 +294,85 @@ st.markdown("""
 """)
 
 
-# --- Section: Explore Relationships Between Variables (Log–Log) ---
+# --- SECTION D: Explore Relationships Between Variables ---
+
 st.header("D) Explore Relationships Between Variables")
 
 st.write("""
-Use the dropdowns to choose two variables. The plot uses **log scales** on both axes so you can see tiny and huge values together.
-All species are shown in grey; you can **highlight** one animal class. Turn on the **line of best fit** to see the slope/equation.
+In this final section, you'll look for **relationships between two traits** — for example, whether animals
+with larger body masses also tend to have larger brains or higher metabolic rates. 
+""")
+
+# ------------------------------------------------------------------
+# 🟩 PART 1 – DEMO GRAPH (fixed, colourful, hoverable)
+# ------------------------------------------------------------------
+
+st.subheader("Demo: Relationship between Body Mass and Brain Size")
+
+st.write("""
+This graph is a *scatter plot* showing the relationship between two variables.  
+The patterns we can see are called *correlations* — this means the variables are "related together" - there is a connection between these traits.  
+Looking for these relationships is one of the important ways scientists discover how the world works. 
+
+Each point on the graph represents a different species.  
+Both axes use **log scales**, which makes it possible to compare very small and very large animals on the same chart.  
+
+In this demo, the animal classes are shown in different colours.  
+Move your mouse over the points to see each species’ **common name** and class.  
+Notice the overall pattern: even though animals vary enormously in size, the relationship between
+body mass and brain size forms a nearly straight line — with slightly different slopes for each class.
+""")
+
+
+demo_df = data.copy()
+demo_df.columns = demo_df.columns.str.strip().str.replace('\u00a0', ' ', regex=True)
+demo_df["Class (common name)"] = demo_df["class"].map({
+    "Amphibia": "Amphibians",
+    "Arachnida": "Spiders & Scorpions",
+    "Aves": "Birds",
+    "Insecta": "Insects",
+    "Malacostraca": "Crustaceans",
+    "Mammalia": "Mammals",
+    "Clitellata": "Worms",
+    "Gastropoda": "Snails & Slugs",
+    "Reptilia": "Reptiles",
+})
+demo_df = demo_df.dropna(subset=["body mass (kg)", "brain size (kg)"])
+demo_df = demo_df[(demo_df["body mass (kg)"] > 0) & (demo_df["brain size (kg)"] > 0)]
+
+fig_demo = px.scatter(
+    demo_df,
+    x="body mass (kg)",
+    y="brain size (kg)",
+    color="Class (common name)",
+    hover_data=["common name"],
+    log_x=True,
+    log_y=True,
+    title="Body Mass vs Brain Size (log–log scale)",
+    height=550,
+)
+fig_demo.update_traces(marker=dict(size=7, opacity=0.8, line=dict(width=0)))
+fig_demo.update_layout(legend_title_text="Animal Class", margin=dict(l=10, r=10, t=40, b=10))
+
+st.plotly_chart(fig_demo, use_container_width=True)
+
+st.markdown("🚦 What overall pattern do you notice between body mass and brain size across all animals? Answer question 6 in the sidebar")
+
+st.divider()
+
+# ------------------------------------------------------------------
+# 🟦 PART 2 – INTERACTIVE GRAPH (editable version with optional line)
+# ------------------------------------------------------------------
+
+st.subheader("D2) Try it yourself!")
+
+st.write("""
+In the graph below you can choose different variables to explore.
+""")
+
+st.write("""
+Use the dropdowns to choose two variables. 
+All species are shown in grey; you can **highlight** one animal class. Optional: turn on the **line of best fit** to see the slope/equation. (Advanced note: the slope is really interesting to scientists! look up "power laws in scaling" if you want to know more!)
 """)
 
 # Clean column names once (keeps things robust if CSV headings had odd spaces)
@@ -414,19 +487,14 @@ else:
 
 # --- Reflection ---
 st.markdown("""
-🚦 Play with different visualisations until you find one that is interesting to you. Then answer question 6 in the sidebar. If you finish early, have a think about the questions below
 
 
 💬 **Advanced:**  
 When plotted on a log–log scale, straight lines show *scaling laws* — one quantity changing in proportion to another.  
 The **slope** tells us *how fast* one grows compared to the other.  
 
-For example:
-- A slope of **1.0** means perfect proportional growth.  
-- A slope **less than 1** means the y-variable increases more slowly.  
-- A slope **greater than 1** means it increases faster.  
-
-✏️ What does the slope you found suggest about how these traits scale across species? Is it the same for different classes of animal?
+💬 What does the slope you found suggest about how these traits scale across species? Is it the same for different classes of animal?
+💬 Extra advanced: why might the correlation of metabolic rate and body size follow a cube-square law?
 """)
 
 

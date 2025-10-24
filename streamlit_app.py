@@ -189,15 +189,33 @@ classes = plot_data["Class (common name)"].unique()
 positions = np.arange(len(classes))
 colours = plt.cm.tab10(np.linspace(0, 1, len(classes)))  # distinct palette
 
-graph_type = st.selectbox(
+# Graph type selection with friendly display labels and defaults
+graph_display_labels = {
+    "Box and Whisker": "Box and Whisker Plot",
+    "Violin": "Violin Plot",
+    "Average ± Error Bars": "Average ± Error Bars",
+    "Strip (Jitter)": "Individual Points"
+}
+
+# The internal values (for your plotting code)
+graph_options = list(graph_display_labels.keys())
+
+# Create the selectbox, defaulting to "Strip (Jitter)"
+selected_label = st.selectbox(
     "Choose a graph type:",
-    ["Box and Whisker", "Violin", "Average ± Error Bars", "Strip (Jitter)"]
+    options=[graph_display_labels[g] for g in graph_options],
+    index=graph_options.index("Strip (Jitter)")  # default
 )
+
+# Reverse-map to the internal value for your logic
+graph_type = [k for k, v in graph_display_labels.items() if v == selected_label][0]
+
 scale_option = st.radio(
     "Choose y-axis scale:",
     ["Linear", "Logarithmic"],
     horizontal=True,
-    key="scale_class_compare"
+    key="scale_class_compare",
+    index=1  # ✅ default to "Logarithmic"
 )
 
 fig, ax = plt.subplots(figsize=(8, 5))
@@ -357,6 +375,11 @@ fig_demo.update_layout(legend_title_text="Animal Class", margin=dict(l=10, r=10,
 st.plotly_chart(fig_demo, use_container_width=True)
 
 st.markdown("🚦 What overall pattern do you notice between body mass and brain size across all animals? Answer question 6 in the sidebar")
+st.markdown(""" 
+            💬 **Advanced:** Can you find humans? What does their position mean about the mass of the human brain in relation to our body size?
+            
+            💬 Extra advanced: Why are their multiple dots for humans? What does each represent? (You may need to look back at the source of data to find this answer)
+            """)
 
 st.divider()
 
@@ -494,6 +517,7 @@ When plotted on a log–log scale, straight lines show *scaling laws* — one qu
 The **slope** tells us *how fast* one grows compared to the other.  
 
 💬 What does the slope you found suggest about how these traits scale across species? Is it the same for different classes of animal?
+
 💬 Extra advanced: why might the correlation of metabolic rate and body size follow a cube-square law?
 """)
 
